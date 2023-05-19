@@ -1,11 +1,22 @@
 import '@logseq/libs'
 import { LSPluginBaseInfo } from '@logseq/libs/dist/libs'
+import { SettingSchemaDesc } from '@logseq/libs/dist/LSPlugin';
 //import * as fs from 'fs';
-import { join } from 'path';
+// import { join } from 'path';
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const pagePrefix = "_Pseudo-Collab-User-";
 const blockPrefix = "# Do not edit this page\nPlugin Pseudo Collab\n";
+
+const settings: SettingSchemaDesc[] = [
+    {
+        key: 'currentUser',
+        type: 'string',
+        title: 'Username',
+        description: 'Select a unique username for this device.',
+        default: Date.now(),
+    },
+]
 
 async function getAllPCPages(): Promise<any[]> {
 
@@ -19,7 +30,7 @@ async function getAllPCPages(): Promise<any[]> {
     return PCPages;
 }
 
-async function getOtherPCPages(currentUser : string): Promise<any[]> {
+async function getOtherPCPages(currentUser: string): Promise<any[]> {
     let pages = await logseq.Editor.getAllPages();
     let PCPages = [];
     pages.forEach(p => {
@@ -29,21 +40,20 @@ async function getOtherPCPages(currentUser : string): Promise<any[]> {
     })
     return PCPages;
 }
-    
-async function getUserPCPage(currentUser : string): Promise<any | null> {
 
-    
+async function getUserPCPage(currentUser: string): Promise<any | null> {
+
+
     let userCollabPageName = pagePrefix + currentUser;
-   
+
     let pages = await logseq.Editor.getAllPages();
-    for(let i = 0; i<pages.length;i++) {
+    for (let i = 0; i < pages.length; i++) {
         let p = pages[i];
-        if(p.originalName === pagePrefix + currentUser)
-        {
+        if (p.originalName === pagePrefix + currentUser) {
             return p;
         }
     }
-        return null;
+    return null;
 }
 
 async function main() {
@@ -88,7 +98,7 @@ async function main() {
     let blocks = await logseq.App.getPageBlocksTree(userCollabPage.uuid);
     let targetBlock = blocks[0];
     console.log(targetBlock);
-    
+
     await logseq.Editor.updateBlock(targetBlock.uuid, blockPrefix);
 
     //console.log(userInfo);
@@ -119,13 +129,13 @@ async function main() {
     async function isPageCurrentlyEditing(originalName: string): Promise<IUserEditingPage | null> {
         if (originalName) {
             let PCPages = await getOtherPCPages(currentUser);
-            for(let x = 0;x < PCPages.length;x++) {
+            for (let x = 0; x < PCPages.length; x++) {
                 let p = PCPages[x];
 
                 let pageBlock = (await logseq.App.getPageBlocksTree(p.uuid))[0];
                 let content = pageBlock.content;
                 if (content) {
-                    
+
                     let arr = content.split('\n');
                     let i = arr.findIndex(l => {
                         return l.startsWith('originalName');
@@ -138,7 +148,8 @@ async function main() {
                             pageOriginalName: oName
                         }
                     }
-                }            }
+                }
+            }
 
         }
         return null;
@@ -156,7 +167,7 @@ async function main() {
             let targetBlock = blocks[0];
             console.log(targetBlock);
             let isEditing = page.originalName
-            let editing = blockPrefix + "uuid:" + page.uuid + "\noriginalName:" + isEditing;
+            let editing = blockPrefix + "date:" + Date.now + "\nuuid:" + page.uuid + "\noriginalName:" + isEditing;
             await logseq.Editor.updateBlock(targetBlock.uuid, editing);
             let otherIsEditing = await isPageCurrentlyEditing(isEditing);
             if (otherIsEditing) {
