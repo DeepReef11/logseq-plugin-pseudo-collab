@@ -5,8 +5,8 @@ import { SettingSchemaDesc } from '@logseq/libs/dist/LSPlugin';
 // import { join } from 'path';
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-const pagePrefix = "_Pseudo-Collab-User-";
-const blockPrefix = "# Do not edit this page\nPlugin Pseudo Collab\n";
+const pagePCPrefix = "_Pseudo-Collab-User-";
+const blockPCPrefix = "# Do not edit this page\nPlugin Pseudo Collab\n";
 
 const settings: SettingSchemaDesc[] = [
     {
@@ -26,38 +26,42 @@ const settings: SettingSchemaDesc[] = [
     },
 ]
 
+
+// Get all Pseudo Collab pages. Those pages keep record of which page a user is editing. There's one PC page per user.
 async function getAllPCPages(): Promise<any[]> {
 
     let pages = await logseq.Editor.getAllPages();
     let PCPages = [];
     pages.forEach(p => {
-        if (p.originalName.startsWith(pagePrefix)) {
+        if (p.originalName.startsWith(pagePCPrefix)) {
             PCPages.push(p);
         }
     })
     return PCPages;
 }
 
+// Get all Pseudo Collab pages except user's page.
 async function getOtherPCPages(currentUser: string): Promise<any[]> {
     let pages = await logseq.Editor.getAllPages();
     let PCPages = [];
     pages.forEach(p => {
-        if (p.originalName.startsWith(pagePrefix) && p.originalName != pagePrefix + currentUser) {
+        if (p.originalName.startsWith(pagePCPrefix) && p.originalName != pagePCPrefix + currentUser) {
             PCPages.push(p);
         }
     })
     return PCPages;
 }
 
+// Get user's Pseudo Collab page.
 async function getUserPCPage(currentUser: string): Promise<any | null> {
 
 
-    let userCollabPageName = pagePrefix + currentUser;
+    let userCollabPageName = pagePCPrefix + currentUser;
 
     let pages = await logseq.Editor.getAllPages();
     for (let i = 0; i < pages.length; i++) {
         let p = pages[i];
-        if (p.originalName === pagePrefix + currentUser) {
+        if (p.originalName === pagePCPrefix + currentUser) {
             return p;
         }
     }
@@ -80,7 +84,7 @@ async function main() {
     let PCPages = await getAllPCPages();
 
     let currentUser = logseq.settings?.currentUser;
-    let userCollabPageName = pagePrefix + currentUser;
+    let userCollabPageName = pagePCPrefix + currentUser;
     let userCollabPage = await getUserPCPage(currentUser);
 
     if (!userCollabPage) {
@@ -91,36 +95,16 @@ async function main() {
     }
 
     let blocks = await logseq.App.getPageBlocksTree(userCollabPage.uuid);
-    let targetBlock = blocks[0];
-    console.log(targetBlock);
-
-    await logseq.Editor.updateBlock(targetBlock.uuid, blockPrefix);
+    let userPCBlock = blocks[0];
+    
+    await logseq.Editor.updateBlock(userPCBlock.uuid, blockPCPrefix);
 
     logseq.onSettingsChanged(async (settings) => {
-        logseq.Editor.deletePage(pagePrefix + currentUser);
+        logseq.Editor.deletePage(pagePCPrefix + currentUser);
         currentUser = settings?.currentUser;
-        userCollabPageName = pagePrefix + currentUser;
+        userCollabPageName = pagePCPrefix + currentUser;
         userCollabPage = await logseq.Editor.createPage(userCollabPageName, {}, { redirect: false, createFirstBlock: true, format: "markdown", journal: false });
     });
-
-    //console.log(userInfo);
-    //logseq.App.showMsg(userInfo);
-
-    // logseq.provideModel({
-    //     async toolClick() {
-    //         onUserMovedEvent();
-    //     }
-    // })
-
-    // logseq.App.registerUIItem('toolbar', {
-    //     key: 'logseq-pcollab',
-    //     template: `
-    //           <a data-on-click="toolClick"
-    //            class="button">
-    //            <i >P-C</i>
-    //          </a>
-    //                                      `
-    // })
 
     interface IUserEditingPage {
         username: string;
@@ -134,16 +118,16 @@ async function main() {
             for (let x = 0; x < PCPages.length; x++) {
                 let p = PCPages[x];
 
-                let pageBlock = (await logseq.App.getPageBlocksTree(p.uuid))[0];
-                let content = pageBlock.content;
+                let block = (await logseq.App.getPageBlocksTree(p.uuid))[0];
+                let content = block.content;
                 if (content) {
 
                     let arr = content.split('\n');
                     let iLastActivity = arr.findIndex(l => { return l.startsWith('date:') });
                     if (iLastActivity >= 0) {
+                        
                         let lastActivity = arr[iLastActivity].substring(5); // 5 is length of "date:"
-                        console.log(lastActivity + ", " + arr[iLastActivity]);
-                        console.log(+lastActivity + " +time: " +  (logseq.settings?.inactive * 60000));
+                        // Check if inactive                      
                         if (logseq.settings?.inactive > 0 && Date.now() < +lastActivity + (logseq.settings?.inactive * 60000)) {
 
 
@@ -152,11 +136,11 @@ async function main() {
                             });
                             if (iOriginalName >= 0) {
                                 let oName = arr[iOriginalName].split(':')[1];
-
+                                // Check if user is on the same page as another user
                                 if (oName === originalName) {
 
                                     return {
-                                        username: p.originalName.substring(pagePrefix.length),
+                                        username: p.originalName.substring(pagePCPrefix.length),
                                         pageOriginalName: oName
                                     }
                                 }
@@ -173,16 +157,13 @@ async function main() {
     async function onUserMovedEvent() {
 
         let blockInfo = await logseq.Editor.getCurrentBlock();
-        //console.log(blockInfo);
+
         if (blockInfo) {
             let page = await logseq.Editor.getPage(blockInfo.page.id);
-            console.log(page);
-
             let blocks = await logseq.App.getPageBlocksTree(userCollabPage.uuid);
             let targetBlock = blocks[0];
-            console.log(targetBlock);
             let isEditing = page.originalName
-            let editing = blockPrefix + "date:" + Date.now() + "\nuuid:" + page.uuid + "\noriginalName:" + isEditing;
+            let editing = blockPCPrefix + "date:" + Date.now() + "\nuuid:" + page.uuid + "\noriginalName:" + isEditing;
             await logseq.Editor.updateBlock(targetBlock.uuid, editing);
             let otherIsEditing = await isPageCurrentlyEditing(isEditing);
             if (otherIsEditing) {
@@ -215,15 +196,6 @@ async function main() {
         })
     }, false)
 
-    /* top.document.addEventListener('click', function(e) {
-         console.log("mouse event click");
-         onUserMovedEvent();
-     }, false)
- 
-     top.document.addEventListener('auxclick', function(e) {
-         console.log("mouse event click");
-         onUserMovedEvent();
-     }, false)*/
 }
 
 
