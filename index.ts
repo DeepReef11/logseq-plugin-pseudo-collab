@@ -1,18 +1,30 @@
 import '@logseq/libs'
 import { LSPluginBaseInfo } from '@logseq/libs/dist/libs'
+//import * as fs from 'fs';
+import { join } from 'path';
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function main() {
     logseq.App.showMsg('Pseudo collab plugin enabled');
     //let userInfo = await logseq.App.getUserInfo();
-
+    
     //console.log("Run: " + new Date());
     let pagePrefix = "_Pseudo-Collab-User-";
     await sleep(1000);
-    let graph = await logseq.App.getCurrentGraph();
     
-        let pages = await logseq.Editor.getAllPages();
+  //   let graph = await logseq.app.getcurrentgraph();
+  //   let folder = graph.path;
+  //   let data = "data";
+  //   let filename = "test123.txt";
+  //    fs.writefilesync(join(folder, filename), data, {
+  //   flag: 'w',
+  // });
+
+  // const contents = fs.readfilesync(join(folder, filename), 'utf-8');
+  // console.log(contents); // 👉️ "one two three four"
+ 
+    let pages = await logseq.Editor.getAllPages();
     let PCPages = [];
     pages.forEach( p => {
        if(p.originalName.startsWith(pagePrefix)) {

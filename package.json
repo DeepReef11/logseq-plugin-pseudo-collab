@@ -3,18 +3,20 @@
   "version": "0.0.1",
   "author": "DeepReef11",
   "main": "dist/index.html",
-    "targets": {
-            "main": false
-    },
+  "targets": {
+    "main": false
+  },
   "description": "Plugin that show when another user is in a page to prevent erasing content when using the same graph.",
   "license": "BSD",
   "scripts": {
-          "dev": "parcel ./index.html --public-url ./",
-              "build": "parcel build --public-url . --no-source-maps index.html"
+    "dev": "parcel ./index.html --public-url ./",
+    "build": "parcel build --public-url . --no-source-maps index.html"
   },
   "devDependencies": {
     "@logseq/libs": "^0.0.1-alpha.29",
-    "parcel": "^2.8.3"
+    "@types/node": "^20.2.1",
+    "parcel": "^2.8.3",
+    "path-browserify": "^1.0.1"
   },
   "logseq": {
     "id": "logseq-pseudo-collab",
