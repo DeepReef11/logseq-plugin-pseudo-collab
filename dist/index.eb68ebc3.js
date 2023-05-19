@@ -1,0 +1,1 @@
+logseq.ready((async function(){logseq.App.showMsg("Pseudo collab plugin enabled");var o=logseq.App.getUserInfo();logseq.App.showMsg(o)})).catch(console.error);
